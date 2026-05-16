@@ -116,6 +116,22 @@
     .score-details { grid-template-columns: 1fr 1fr; }
   }
 
+/* ── 汇总报告 styles ── */
+.sum-banner{background:linear-gradient(135deg,#1a3560,#1a5fa8);color:#fff;border-radius:10px;padding:20px 24px;margin-bottom:14px;}
+.sum-banner h2{font-size:18px;font-weight:700;margin-bottom:4px;}
+.sum-banner .sub{font-size:12px;opacity:.85;}
+.sum-kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:14px;}
+.sum-kpi{background:#fff;border:1px solid var(--border);border-radius:8px;padding:12px 14px;box-shadow:0 2px 6px rgba(0,0,0,.06);}
+.sum-kpi .kl{font-size:11px;color:#666;margin-bottom:4px;}
+.sum-kpi .kv{font-size:20px;font-weight:700;color:var(--blue);}
+.sum-kpi .ku{font-size:11px;color:#999;}
+.sum-kpi.ok{border-color:#4caf50;background:#f1fff5;}
+.sum-kpi.ok .kv{color:#1a7c3a;}
+.sum-kpi.bad{border-color:#ef5350;background:#fff5f5;}
+.sum-kpi.bad .kv{color:#c0392b;}
+.sum-kpi.warn{border-color:#ff9800;background:#fffbf0;}
+.sum-kpi.warn .kv{color:#d48806;}
+
 /* ── Simulation Tab Styles (scoped to .sim-wrap) ── */
 .sim-wrap {
   --sim-bg:     #080d18;
@@ -271,6 +287,9 @@ user-select: none
 </style>
 </head>
 <body>
+<script>
+(function(){const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';document.head.appendChild(s);})();
+</script>
 
 <div class="login-overlay" id="loginOverlay">
   <div class="login-box">
@@ -310,7 +329,7 @@ user-select: none
 <div class="app-header">
   <div class="header-row">
     <div>
-      <h1>🚗 汽车盘式制动系统设计计算工具（作业版）</h1>
+      <h1>🚗 汽车盘式制动系统设计计算工具（课程设计版）</h1>
       <div class="sub">《汽车设计》第6版（闵海涛 王建华）第九章 制动系设计 · 广西大学 · 车辆工程专业 · 《汽车设计》课程教学团队</div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -329,10 +348,12 @@ user-select: none
   <div class="tab" onclick="switchTab(2)">③ 参数校核</div>
   <div class="tab" onclick="switchTab(3)">④ 制动力分配</div>
   <div class="tab" onclick="switchTab(4)">⑤ 盘式制动器设计</div>
-  <div class="tab" onclick="switchTab(5)">⑥ 驻车制动</div>
+  <div class="tab" onclick="switchTab(5)">⑥ 驻车+应急制动</div>
   <div class="tab" onclick="switchTab(6)">⑦ 制动驱动机构</div>
   <div class="tab" onclick="switchTab(7)">⑧ 制动性能仿真</div>
-  <div class="tab" onclick="switchTab(8)">📊 智能评分报告</div>
+  <div class="tab" onclick="switchTab(8)">📊 汇总报告</div>
+  <div class="tab" onclick="switchTab(9)">🏆 智能评分报告</div>
+
 </div>
 
 <!-- TAB 0: 整车基本参数 -->
@@ -470,19 +491,23 @@ user-select: none
   </div>
 </div>
 
-<!-- TAB 5: 驻车制动 -->
+<!-- TAB 5: 驻车+应急制动 -->
 <div class="content" id="tab5">
   <div class="card">
-    <div class="card-title"><span class="icon">🅿️</span>驻车制动性能计算</div>
+    <div class="card-title"><span class="icon">🅿️</span>驻车+应急制动性能计算</div>
     <div class="info-box">
       <strong>国标要求：</strong>GB 12676-2014规定，驻车制动应能使整车在坡度不小于20%（约11.3°）的坡道上保持静止（上坡或下坡）。本车采用后轮盘式制动器兼作驻车制动。
+      应急制动采用后轮制动器（或中央制动器）在行驶制动系失效时提供制动力矩，计算依据 GB 12676-2014 §3.2 及《汽车设计》公式（0-37）～（0-40）。
     </div>
     <div class="grid3">
       <div class="field"><label>路面附着系数 φ（计算用）</label><input type="number" id="phi_park" value="0.7" step="0.01"><div class="unit">一般取0.7</div></div>
       <div class="field"><label>前轴至质心距离 L₁（满载）</label><input type="number" id="L1_park" value="0"><div class="unit">mm（自动从前轴荷比例计算）</div></div>
       <div class="field"><label>后轴至质心距离 L₂（满载）</label><input type="number" id="L2_park" value="0"><div class="unit">mm（自动从前轴荷比例计算）</div></div>
     </div>
-    <div class="btn-bar"><button class="btn btn-primary" onclick="calcParking()">计算驻车制动</button></div>
+    <div class="grid3" style="margin-top:8px">
+      <div class="field"><label>主减速比 i₀（应急制动用）</label><input type="number" id="i0_park" value="3.7" step="0.1"><div class="unit">用于中央制动器应急制动力矩折算</div></div>
+    </div>
+    <div class="btn-bar"><button class="btn btn-primary" onclick="calcParking()">计算驻车+应急制动</button></div>
   </div>
   <div class="card">
     <div class="card-title"><span class="icon">📐</span>驻车制动计算结果</div>
@@ -887,8 +912,40 @@ user-select: none
   </div>
 </div>
 
-<!-- TAB 8: 评分报告 -->
+<!-- TAB 8: 汇总报告 -->
 <div class="content" id="tab8">
+  <div class="sum-banner">
+    <h2>📊 盘式制动系统设计汇总报告</h2>
+    <div class="sub">《汽车设计》第6版（闵海涛 王建华）· 广西大学 · 车辆工程专业</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span>学生信息</div>
+    <div id="sum_student_info" style="padding:8px 0;font-size:14px;color:#333">请先完成登录和计算</div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">🚦</span>关键性能指标（KPI）</div>
+    <div class="sum-kpi-grid" id="sum_kpi"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">📐</span>全局参数汇总</div>
+    <div id="sum_params_table"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">✅</span>设计合规性检查</div>
+    <div id="sum_compliance"></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">🔢</span>制动器核心计算结果</div>
+    <div id="sum_brake_results"></div>
+  </div>
+  <div class="btn-bar">
+    <button class="btn btn-primary" onclick="renderSummaryTab()">🔄 刷新汇总</button>
+    <button class="btn btn-success" onclick="switchTab(9)">🏆 前往智能评分 →</button>
+  </div>
+</div>
+
+<!-- TAB 9: 智能评分报告 -->
+<div class="content" id="tab9">
   <div class="score-card">
     <div class="score-display">
       <div class="score-label">设计总分</div>
@@ -938,6 +995,8 @@ user-select: none
     <button class="btn btn-warning" onclick="calcAll()">🔄 重新计算评分</button>
   </div>
 </div>
+
+
 
 <script>
 const TEACHER_PASSWORD = 'gxuqpp123';
@@ -1080,6 +1139,9 @@ function switchTab(idx){
     }
     setTimeout(()=>simDraw(currentSimTab),60);
   }
+  if(idx===8){
+    renderSummaryTab();
+  }
 }
 
 function updateVehicleType(){
@@ -1137,13 +1199,15 @@ function calcBasic(){
   state.Tf1=state.Fb1_total*(state.re/1000)/2;
   state.Tf2=state.Fb2_total*(state.re/1000)/2;
 
-  // 最大制动力矩 (at φ=phi, full load, using I-curve simultaneous lock)
+  // 最大制动力矩
+  // 前轴：I 曲线同时抱死工况；后轴：按制动力分配比 β 由前轴值折算
   const phi=state.phi; const L=state.L/1000; const hg=state.hg_full/1000;
   const L1f=state.L1_full/1000; const L2f=state.L2_full/1000;
   const Gz=state.ma*g; // full load weight (N)
-  // at simultaneous lock: Fb1_max = phi*Gz*(L2+phi*hg)/L, Fb2_max = phi*Gz*(L1-phi*hg)/L
+  // 前轴：同时抱死 Fb1max = φ·G·(L₂+φ·hg)/L
   const Fb1max_ax=phi*Gz*(L2f+phi*hg)/L;
-  const Fb2max_ax=phi*Gz*(L1f-phi*hg)/L;
+  // 后轴：按 β 折算 Fb2max = Fb1max × (1−β) / β
+  const Fb2max_ax=Fb1max_ax*(1-state.beta)/state.beta;
   state.Tf1_max=Fb1max_ax*(state.re/1000)/2;  // single wheel
   state.Tf2_max=Fb2max_ax*(state.re/1000)/2;
 
@@ -1191,9 +1255,9 @@ function calcBasic(){
     <div>后单轮：Tf₂ = (${fmt(state.Fb2_total,1)} / 2) × ${re_m} m = <strong>${fmt(state.Tf2,2)} N·m</strong></div>
   </div>
 
-  <div class="section-sub">⑥ 前、后轴车轮制动器最大制动力矩（φ = ${phi} 时，前后轮同时抱死）</div>
+  <div class="section-sub">⑥ 前、后轴车轮制动器最大制动力矩</div>
   <div class="formula-box">
-    <div class="step">公式（I曲线条件）：<br>
+    <div class="step">前轴（I曲线·φ时前后轮同时抱死）：<br>
       Fb₁max_轴 = φ × G × (L₂ + φ × hg) / L<br>
       Tf₁max_单轮 = Fb₁max_轴 × rₑ / 2</div>
     <div>满载参数：G = ${state.ma}×9.8 = ${fmt(Gz,1)} N，L₂ = ${fmt(L2f*1000,1)} mm，hg = ${state.hg_full} mm，L = ${state.L} mm</div>
@@ -1202,9 +1266,13 @@ function calcBasic(){
       　　= ${fmt(phi,2)} × ${fmt(Gz,1)} × ${fmt(L2f*1000+phi*state.hg_full,1)} / ${state.L} = <strong>${fmt(Fb1max_ax,1)} N</strong><br>
       前单轮最大制动力矩：<strong>Tf₁max = ${fmt(Fb1max_ax,1)}/2 × ${re_m} = ${fmt(state.Tf1_max,2)} N·m</strong>
     </div>
-    <div style="margin-top:6px">
-      后轴最大制动力：Fb₂max = ${fmt(phi,2)} × ${fmt(Gz,1)} × (${fmt(L1f*1000,1)} - ${fmt(phi,2)}×${state.hg_full}) / ${state.L}<br>
-      　　= ${fmt(phi,2)} × ${fmt(Gz,1)} × ${fmt(L1f*1000-phi*state.hg_full,1)} / ${state.L} = <strong>${fmt(Fb2max_ax,1)} N</strong><br>
+  </div>
+  <div class="formula-box" style="margin-top:6px">
+    <div class="step">后轴车轮制动器最大制动力矩按以上方法计算：<br>
+      公式（按制动力分配比 β，后轴）：Fb₂max = Fb₁max × (1−β) / β</div>
+    <div style="margin-top:4px">
+      后轴最大制动力：Fb₂max = ${fmt(Fb1max_ax,1)} × (1 − ${fmt(state.beta,3)}) / ${fmt(state.beta,3)}<br>
+      　　= ${fmt(Fb1max_ax,1)} × ${fmt(1-state.beta,3)} / ${fmt(state.beta,3)} = <strong>${fmt(Fb2max_ax,1)} N</strong><br>
       后单轮最大制动力矩：<strong>Tf₂max = ${fmt(Fb2max_ax,1)}/2 × ${re_m} = ${fmt(state.Tf2_max,2)} N·m</strong>
     </div>
     <div style="font-size:12px;color:#666;margin-top:6px">注：单个车轮制动器的最大制动力矩为各轴计算结果的1/2（每轴2个车轮）</div>
@@ -1639,6 +1707,67 @@ function calcParking(){
     下坡停驻时后轴法向力增大，一般更容易满足。最终以两者中较小的坡度为设计控制值。
   </div>`;
 
+  // ── 应急制动计算（公式 0-37 ~ 0-40）────────────────────────────────────
+  const i0  = (()=>{ const v=parseFloat(document.getElementById('i0_park')?.value); return isNaN(v)||v<=0?3.7:v; })();
+  const re_m_park = state.re / 1000;   // 有效轮半径 m
+  const G_full    = ma * g;            // 满载重力 N
+
+  // 式（0-37）：应急制动时后桥制动力
+  // F_B2 = m_a × g × L1 × φ / (L + φ·h_g)
+  const F_B2 = G_full * L1 * phi / (L + phi * hg);   // N
+
+  // 式（0-38）：后桥制动力矩
+  const T_B2 = F_B2 * re_m_park;               // N·m
+
+  // 式（0-39）：单个后轮制动器应急制动力矩
+  const T_wheel = T_B2 / 2;                    // N·m
+  state.T_emerg_req = T_wheel;                 // 存入 state
+
+  // 式（0-40）：中央制动器应急制动力矩（经主减速比 i₀ 折算）
+  const T_central = T_B2 / i0;                 // N·m
+
+  // 校核：单轮应急制动力矩 vs 盘式制动器设计力矩
+  const disc_cap  = state.Tf2_max;             // 已由 ② 页按 β 折算计算
+  const ok_wheel  = disc_cap > 0 && disc_cap >= T_wheel;
+
+  html += `
+  <div class="section-sub" style="margin-top:18px">⑤ 应急制动计算（§ 3.7，公式 0-37 ～ 0-40）</div>
+  <div class="info-box">
+    应急制动时后轮一般将抱死滑移，故后桥制动力按附着极限计算。<br>
+    参数：m_a = ${ma} kg，L₁ = ${fmt(L1*1000,1)} mm，L = ${state.L} mm，
+    h_g = ${state.hg_full} mm，φ = ${fmt(phi,2)}，r_e = ${state.re} mm，i₀ = ${i0}
+  </div>
+  <div class="formula-box">
+    <div class="step">式（0-37） 后桥制动力：<br>
+      F_B2 = m_a·g·L₁ / (L + φ·h_g) × φ</div>
+    <div>= ${ma} × 9.8 × ${fmt(L1*1000,1)/1000} / (${fmt(L,3)} + ${fmt(phi,2)}×${fmt(hg,3)}) × ${fmt(phi,2)}</div>
+    <div>= ${fmt(G_full*L1,1)} / ${fmt(L+phi*hg,3)} × ${fmt(phi,2)}</div>
+    <div class="result">　F_B2 = <strong>${fmt(F_B2,3)} N</strong></div>
+  </div>
+  <div class="formula-box">
+    <div class="step">式（0-38） 后桥所需制动力矩：<br>
+      M_B2 = F_B2 × r_e = m_a·g·L₁ / (L + φ·h_g) × φ × r_e</div>
+    <div>= ${fmt(F_B2,3)} × ${fmt(re_m_park,4)}</div>
+    <div class="result">　M_B2 = <strong>${fmt(T_B2,3)} N·m</strong></div>
+  </div>
+  <div class="formula-box">
+    <div class="step">式（0-39） 单个后轮制动器应急制动力矩（后轮盘式制动器兼作应急制动）：<br>
+      M_轮 = M_B2 / 2</div>
+    <div>= ${fmt(T_B2,3)} / 2</div>
+    <div class="result">　M_轮 = <strong>${fmt(T_wheel,4)} N·m</strong></div>
+    <div style="margin-top:8px">
+      与盘式制动器设计力矩校核：Tf₂max = ${disc_cap>0?fmt(disc_cap,3)+' N·m':'（请先在②标签页计算基本参数）'}　
+      ${disc_cap>0?(ok_wheel?'<span class="badge badge-ok">✓ ≥ M_轮，满足应急制动要求</span>':'<span class="badge badge-err">✗ &lt; M_轮，制动力矩不足</span>'):'<span class="badge badge-info">— 待计算</span>'}
+    </div>
+  </div>
+  <div class="formula-box">
+    <div class="step">式（0-40） 若用中央制动器进行应急制动，应有制动力矩（经主减速比 i₀ 折算）：<br>
+      M_中央 = M_B2 / i₀</div>
+    <div>= ${fmt(T_B2,3)} / ${i0}</div>
+    <div class="result">　M_中央 = <strong>${fmt(T_central,4)} N·m</strong></div>
+    <div style="font-size:12px;color:#666;margin-top:4px">其中 i₀ 为主减速比；中央制动器布置在传动轴上，所需力矩经 i₀ 折算后远小于车轮处制动力矩。</div>
+  </div>`;
+
   document.getElementById('parkingResults').innerHTML=html;
 }
 
@@ -1898,6 +2027,69 @@ function generateSummary(){
   document.getElementById('chk_park').textContent=fmt(slope_up,1)+'%'; document.getElementById('chk_park_v').innerHTML=badge(slope_up>=20);
 }
 
+// ---- SUMMARY TAB ----
+function renderSummaryTab(){
+  // Student info
+  document.getElementById('sum_student_info').innerHTML =
+    state.studentId
+      ? `<b>学号：</b>${state.studentId} &nbsp;&nbsp; <b>姓名：</b>${state.studentName} &nbsp;&nbsp; <b>生成时间：</b>${new Date().toLocaleString('zh-CN')}`
+      : '请先登录';
+
+  // KPI cards
+  const kpiDefs=[
+    {l:'制动减速度 j₀', v:fmt(state.j0,2), u:'m/s²', ok:state.j0>=5.9, req:'≥5.9'},
+    {l:'制动距离 S', v:fmt(state.S,1), u:'m', ok:state.S<=20.0, req:'≤20.0'},
+    {l:'同步附着系数 φ₀', v:fmt(state.phi_sync,3), u:'', ok:state.phi_sync>=0.5&&state.phi_sync<=0.7, req:'0.5~0.7'},
+    {l:'制动力分配系数 β', v:fmt(state.beta,3), u:'', ok:state.beta>=0.55&&state.beta<=0.65, req:'0.55~0.65'},
+    {l:'踏板力 Fₚ', v:fmt(state.Fp,1), u:'N', ok:state.Fp<=500&&state.Fp>0, req:'≤500'},
+    {l:'踏板行程 Sₚ', v:fmt(state.Sp,1), u:'mm', ok:state.Sp<=150&&state.Sp>0, req:'≤150'},
+    {l:'制动盘直径比 D/Dw', v:fmt(getN('D_disc')/state.Dw,3), u:'', ok:(getN('D_disc')/state.Dw)>=0.7&&(getN('D_disc')/state.Dw)<=0.79, req:'0.70~0.79'},
+    {l:'驻车坡度（上坡）', v:(function(){const pp=getN('phi_park')||state.phi;const L1m=state.L1_full/1000;const Lk=state.L/1000;const hg=state.hg_full/1000;const d=Lk-pp*hg;return fmt(pp*L1m/(d>0?d:0.001)*100,1);}()), u:'%', ok:(function(){const pp=getN('phi_park')||state.phi;const L1m=state.L1_full/1000;const Lk=state.L/1000;const hg=state.hg_full/1000;const d=Lk-pp*hg;return pp*L1m/(d>0?d:0.001)*100>=20;}()), req:'≥20'},
+  ];
+  document.getElementById('sum_kpi').innerHTML=kpiDefs.map(k=>{
+    const cls=k.ok?'ok':'bad';
+    return `<div class="sum-kpi ${cls}"><div class="kl">${k.l}<span style="font-size:10px;margin-left:4px;color:#999">（${k.req}）</span></div><div class="kv">${k.v}</div><div class="ku">${k.u}</div></div>`;
+  }).join('');
+
+  // Params table
+  const rows=[
+    ['轴距 L', state.L, 'mm'],['整备质量 m₀', state.m0, 'kg'],['最大总质量 mₐ', state.ma, 'kg'],
+    ['质心高度（满载）', state.hg_full, 'mm'],['车轮有效半径 rₑ', state.re, 'mm'],['轮辋直径 Dw', state.Dw, 'mm'],
+    ['地面附着系数 φ', state.phi, ''],['摩擦因数 f', state.f, ''],['制动盘直径 D', getN('D_disc'), 'mm'],
+    ['摩擦衬块内半径 R₁', getN('R1_pad'), 'mm'],['摩擦衬块外半径 R₂', getN('R2_pad'), 'mm'],
+    ['管路液压 p_wc', getN('p_wc'), 'MPa'],['踏板杠杆比 iₚ', getN('ip'), ''],['真空助力比 I', getN('I_boost'), ''],
+    ['前单轮最大制动力矩 Tf1_max', fmt(state.Tf1_max,2), 'N·m'],['后单轮最大制动力矩 Tf2_max', fmt(state.Tf2_max,2), 'N·m'],
+    ['制动器因数 BF', fmt(state.BF,3), ''],['有效摩擦半径 Re', fmt(state.Re,2), 'mm'],
+  ];
+  document.getElementById('sum_params_table').innerHTML=`<table class="result-table"><tr><th>参数</th><th>数值</th><th>单位</th></tr>${rows.map(r=>`<tr><td>${r[0]}</td><td><b>${r[1]}</b></td><td>${r[2]}</td></tr>`).join('')}</table>`;
+
+  // Compliance
+  const checks=[
+    {l:'制动减速度 j₀≥5.9 m/s²', ok:state.j0>=5.9, v:fmt(state.j0,2)+' m/s²'},
+    {l:'制动距离 S≤20.0 m', ok:state.S<=20.0, v:fmt(state.S,1)+' m'},
+    {l:'同步附着系数 φ₀∈[0.5,0.7]', ok:state.phi_sync>=0.5&&state.phi_sync<=0.7, v:fmt(state.phi_sync,3)},
+    {l:'制动力分配系数 β∈[0.55,0.65]', ok:state.beta>=0.55&&state.beta<=0.65, v:fmt(state.beta,3)},
+    {l:'制动盘直径比 D/Dw∈[0.70,0.79]', ok:(getN('D_disc')/state.Dw)>=0.7&&(getN('D_disc')/state.Dw)<=0.79, v:fmt(getN('D_disc')/state.Dw,3)},
+    {l:'踏板力 Fₚ≤500 N', ok:state.Fp<=500&&state.Fp>0, v:fmt(state.Fp,1)+' N'},
+    {l:'踏板行程 Sₚ≤150 mm', ok:state.Sp<=150&&state.Sp>0, v:fmt(state.Sp,1)+' mm'},
+  ];
+  const allPassed=checks.every(c=>c.ok);
+  document.getElementById('sum_compliance').innerHTML=
+    `<div style="text-align:center;padding:14px 0"><span style="font-size:22px;font-weight:700;color:${allPassed?'var(--ok)':'var(--warn)'}">${allPassed?'✅ 全部合规':'⚠️ 部分项目需优化'}</span></div>`+
+    checks.map(c=>`<div class="verify-row"><div class="check-label">${c.l}</div><div class="check-val">${c.v}</div><div>${badge(c.ok)}</div></div>`).join('');
+
+  // Brake core results
+  document.getElementById('sum_brake_results').innerHTML=`
+    <div class="summary-grid">
+      <div class="summary-item"><div class="label">总制动力 Fb</div><div class="value">${fmt(state.Fb_total,0)}</div><div class="unit">N</div></div>
+      <div class="summary-item"><div class="label">前轴制动力 Fb1</div><div class="value">${fmt(state.Fb1_total,0)}</div><div class="unit">N</div></div>
+      <div class="summary-item"><div class="label">后轴制动力 Fb2</div><div class="value">${fmt(state.Fb2_total,0)}</div><div class="unit">N</div></div>
+      <div class="summary-item"><div class="label">前单轮制动力矩 Tf1</div><div class="value">${fmt(state.Tf1,2)}</div><div class="unit">N·m</div></div>
+      <div class="summary-item"><div class="label">后单轮制动力矩 Tf2</div><div class="value">${fmt(state.Tf2,2)}</div><div class="unit">N·m</div></div>
+      <div class="summary-item"><div class="label">制动强度 z</div><div class="value">${fmt(state.z,4)}</div><div class="unit">—</div></div>
+    </div>`;
+}
+
 // ---- REPORT ----
 function generateFinalReport(){
   generateSummary();
@@ -1934,6 +2126,8 @@ function calcAll(){
   renderDiscTable(); calcDisc(); calcParking(); calcControl();
   generateSummary();
 }
+
+
 
 window.onload=function(){
   renderDiscTable(); updateVehicleType();
